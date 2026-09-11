@@ -1,18 +1,18 @@
-FROM php:8.2-apache
+ARG PHP_VERSION=8.5
 
-# Lavalust needs clean URLs, which means mod_rewrite + AllowOverride
+FROM php:${PHP_VERSION}-apache
+
+RUN docker-php-ext-install pdo pdo_mysql
+
 RUN a2enmod rewrite
 
-# Extensions Lavalust/MySQL typically need
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
-# Copy project files into Apache's web root
 COPY . /var/www/html/
 
-# Fix permissions so Apache can read/write as needed
-RUN chown -R www-data:www-data /var/www/html
-
-# Let .htaccess files actually take effect
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+RUN mkdir -p /var/www/html/runtime/session \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html \
+    && chmod -R 775 /var/www/html/runtime
 
 EXPOSE 80
